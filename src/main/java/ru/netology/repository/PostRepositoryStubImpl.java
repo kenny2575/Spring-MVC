@@ -1,7 +1,6 @@
 package ru.netology.repository;
 
 import org.springframework.stereotype.Repository;
-import ru.netology.exception.NotFoundException;
 import ru.netology.model.Post;
 
 import java.util.List;
@@ -15,11 +14,18 @@ public class PostRepositoryStubImpl implements PostRepository{
     private ConcurrentHashMap<Long, Post> repository = new ConcurrentHashMap<>();
 
     public List<Post> all() {
-        return repository.values().stream().toList();
+        return repository.values()
+                .stream()
+                .filter(post-> !post.getIsRemoved())
+                .toList();
     }
 
     public Optional<Post> getById(long id) {
-        return Optional.ofNullable(repository.getOrDefault(id, null));
+        var post = repository.getOrDefault(id, null);
+        if (post != null) {
+            if (post.getIsRemoved()) post = null;
+        }
+        return Optional.ofNullable(post);
 
     }
 
@@ -34,10 +40,6 @@ public class PostRepositoryStubImpl implements PostRepository{
     }
 
     public void removeById(long id) {
-        try{
-            repository.remove(id);
-        } catch (NullPointerException e){
-            throw new NotFoundException(String.format("No data found with id = %d", id));
-        }
+        repository.get(id).setRemoved(true);
     }
 }
